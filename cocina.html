@@ -10,6 +10,11 @@ body{
 font-family:Arial;
 background:#111;
 color:white;
+transition:background 0.5s;
+}
+
+.flash{
+background:#8b0000 !important;
 }
 
 .mesa{
@@ -79,7 +84,7 @@ color:red;
 <body>
 
 <div style="text-align:center;margin-bottom:20px">
-<img src="logo.png" style="height:420px">
+<img src="logo.png" style="height:140px">
 </div>
 
 <h1>🍳 Cocina</h1>
@@ -104,6 +109,35 @@ const supabaseKey = "sb_publishable_hfoKEQ7CjCtL63kwvXd1MQ_k_WpgGry"
 const db = createClient(supabaseUrl, supabaseKey)
 
 let ultimoConteo = 0
+
+const sonido = document.getElementById("sonido")
+sonido.volume = 1
+
+
+
+function reproducirSonido(){
+
+sonido.currentTime = 0
+sonido.play().catch(()=>{})
+
+setTimeout(()=>{
+sonido.currentTime = 0
+sonido.play().catch(()=>{})
+},700)
+
+}
+
+
+
+function alertaVisual(){
+
+document.body.classList.add("flash")
+
+setTimeout(()=>{
+document.body.classList.remove("flash")
+},2000)
+
+}
 
 
 
@@ -167,7 +201,8 @@ pedidosPorMesa[p.mesa].push(p)
 })
 
 let html=""
-for(const mesa in pedidosPorMesa){
+
+  for(const mesa in pedidosPorMesa){
 
 html += `<div class="mesa">`
 html += `<h2>Mesa ${mesa}</h2>`
@@ -207,7 +242,13 @@ document.getElementById("pedidos").innerHTML = html
 
 
 if(data.length > ultimoConteo){
-document.getElementById("sonido").play()
+
+reproducirSonido()
+
+navigator.vibrate([200,100,200])
+
+alertaVisual()
+
 }
 
 ultimoConteo = data.length
@@ -241,13 +282,19 @@ cargarTop()
 cargarPedidos()
 cargarTop()
 
-  let wakeLock = null
+
+
+let wakeLock = null
 
 async function mantenerPantallaEncendida(){
 
 try{
 
 wakeLock = await navigator.wakeLock.request("screen")
+
+wakeLock.addEventListener("release", () => {
+console.log("Wake Lock liberado")
+})
 
 }catch(err){
 
@@ -257,8 +304,20 @@ console.log("Wake lock no soportado")
 
 }
 
+
+
+document.addEventListener("visibilitychange", () => {
+
+if(document.visibilityState === "visible"){
 mantenerPantallaEncendida()
-  
+}
+
+})
+
+
+
+mantenerPantallaEncendida()
+
 </script>
 
 </body>
