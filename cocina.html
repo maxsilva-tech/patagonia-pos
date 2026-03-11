@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#111;
+color:white;
+}
+
+.mesa{
+border:3px solid white;
+padding:20px;
+margin:20px;
+width:320px;
+display:inline-block;
+vertical-align:top;
+background:#222;
+border-radius:10px;
+}
+
+.mesa h2{
+margin-top:0;
+color:yellow;
+}
+
+.pedido{
+padding:6px;
+font-size:20px;
+border-bottom:1px solid #444;
+margin-bottom:6px;
+}
+
+button{
+margin-top:6px;
+padding:8px;
+font-size:16px;
+background:#2e7d32;
+color:white;
+border:none;
+cursor:pointer;
+border-radius:6px;
+}
+
+button:hover{
+background:#1b5e20;
+}
+
+#top div{
+display:inline-block;
+background:#333;
+padding:10px;
+margin:6px;
+border-radius:8px;
+border:2px solid orange;
+font-size:18px;
+}
+
+.timer-verde{
+color:white;
+}
+
+.timer-amarelo{
+color:yellow;
+}
+
+.timer-vermelho{
+color:red;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div style="text-align:center;margin-bottom:20px">
+<img src="logo.png" style="height:420px">
+</div>
+
+<h1>🍳 Cocina</h1>
+
+<h2>🔥 Más vendidos</h2>
+<div id="top"></div>
+
+<h2>Pedidos entrando</h2>
+<div id="pedidos"></div>
+
+<audio id="sonido">
+<source src="pedido.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+
+const { createClient } = supabase
+
+const supabaseUrl = "https://bhynlcrcggwqaoqflvoh.supabase.co"
+const supabaseKey = "sb_publishable_hfoKEQ7CjCtL63kwvXd1MQ_k_WpgGry"
+
+const db = createClient(supabaseUrl, supabaseKey)
+
+let ultimoConteo = 0
+
+
+
+async function cargarTop(){
+
+const { data } = await db
+.from("pedidos")
+.select("producto")
+
+let contador={}
+
+data.forEach(p=>{
+
+if(!contador[p.producto]){
+contador[p.producto]=0
+}
+
+contador[p.producto]++
+
+})
+
+let ordenados=Object.entries(contador)
+.sort((a,b)=>b[1]-a[1])
+.slice(0,6)
+
+let html=""
+
+ordenados.forEach(p=>{
+
+html+=`
+<div>
+${p[0]} x${p[1]}
+</div>
+`
+
+})
+
+document.getElementById("top").innerHTML=html
+
+}
+
+
+
+async function cargarPedidos(){
+
+const { data } = await db
+.from("pedidos")
+.select("*")
+.eq("estado","pendiente")
+
+let pedidosPorMesa = {}
+
+data.forEach(p=>{
+
+if(!pedidosPorMesa[p.mesa]){
+pedidosPorMesa[p.mesa] = []
+}
+
+pedidosPorMesa[p.mesa].push(p)
+
+})
+
+let html=""
+for(const mesa in pedidosPorMesa){
+
+html += `<div class="mesa">`
+html += `<h2>Mesa ${mesa}</h2>`
+
+pedidosPorMesa[mesa].forEach(p=>{
+
+let minutos = Math.floor((Date.now() - new Date(p.created_at)) / 60000)
+
+let clase="timer-verde"
+
+if(minutos > 5) clase="timer-amarelo"
+if(minutos > 10) clase="timer-vermelho"
+
+html += `
+<div class="pedido">
+
+<span class="${clase}">
+${p.producto} ⏱ ${minutos} min
+</span>
+
+<br>
+
+<button onclick="marcarProductoListo(${p.id})">
+✔ LISTO
+</button>
+
+</div>
+`
+
+})
+
+html += `</div>`
+
+}
+
+document.getElementById("pedidos").innerHTML = html
+
+
+if(data.length > ultimoConteo){
+document.getElementById("sonido").play()
+}
+
+ultimoConteo = data.length
+
+}
+
+
+
+async function marcarProductoListo(id){
+
+await db
+.from("pedidos")
+.update({estado:"listo"})
+.eq("id",id)
+
+cargarPedidos()
+
+}
+
+
+
+setInterval(()=>{
+
+cargarPedidos()
+cargarTop()
+
+},2000)
+
+
+
+cargarPedidos()
+cargarTop()
+
+</script>
+
+</body>
+</html>

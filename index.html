@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#c69214;
+}
+
+button{
+border:none;
+border-radius:10px;
+padding:12px;
+margin:6px;
+font-size:16px;
+cursor:pointer;
+}
+
+#aviso{
+position:fixed;
+top:10px;
+right:10px;
+background:#4CAF50;
+color:white;
+padding:10px;
+border-radius:8px;
+display:none;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div style="text-align:center;margin-bottom:20px">
+<img src="logo.png" style="height:250px">
+</div>
+
+<h1>Mesas</h1>
+
+<div id="aviso"></div>
+<div id="mesas"></div>
+
+<script>
+
+const { createClient } = supabase
+
+const supabaseUrl = "https://bhynlcrcggwqaoqflvoh.supabase.co"
+const supabaseKey = "sb_publishable_hfoKEQ7CjCtL63kwvXd1MQ_k_WpgGry"
+
+const db = createClient(supabaseUrl, supabaseKey)
+
+let mesaActual=null
+
+const opcionesProductos={
+
+"Mini salgadinhos (12 unid.)":[
+"mistos","coxinhas","kibes","bol. queijo","bol. pizza","empadas","enr. salsicha"
+],
+
+"Empanada venezuelana":[
+"fiambre e queijo","queijo branco","peixe","carne desfiada","frango desfiado"
+],
+
+"Alfajor doce de leite":[
+"branco","preto"
+],
+
+"Água das Pedras":[
+"limão","normal","tangerina","frutos bermelhos"
+],
+
+"Água Frize":[
+"normal","limão","maracujá"
+],
+
+"Refrigerante":[
+"coca cola normal","coca cola zero","7up","fanta uva","fanta laranja","fanta ananas","sumol"
+],
+
+"Ice tea":[
+"pêssego","limão","manga"
+],
+
+"Compal":[
+"F.B","laranja","manga","tutifruti","pêssego","manga-laranja","goiaba","maracujá","outro"
+],
+
+"Somersby":[
+"maçã","frutos bermelhos"
+]
+
+}
+
+async function cargarMesas(){
+
+const { data:mesas } = await db
+.from("mesas")
+.select("*")
+
+let barra=""
+let esplanada=""
+let salon=""
+
+for(const m of mesas){
+
+const { data:pedidos } = await db
+.from("pedidos")
+.select("*")
+.eq("mesa",m.id)
+
+let color="green"
+
+const abiertos = pedidos.filter(p => p.estado !== "cerrado")
+
+if(abiertos.length > 0){
+
+const pendientes = abiertos.filter(p => p.estado === "pendiente")
+
+if(pendientes.length > 0){
+color="yellow"
+}else{
+color="red"
+}
+
+}
+
+const boton=`
+<button onclick="abrirMesa('${m.id}')"
+style="width:100px;height:70px;font-size:22px;background:${color}">
+${m.id}
+</button>
+`
+
+if(m.id.startsWith("B")){
+barra+=boton
+}
+else if(m.id.startsWith("E")){
+esplanada+=boton
+}
+else{
+salon+=boton
+}
+
+}
+
+let html=`
+
+<h2>BARRA</h2>
+${barra}
+
+<h2>ESPLANADA</h2>
+${esplanada}
+
+<h2>SALÓN</h2>
+${salon}
+
+`
+
+document.getElementById("mesas").innerHTML=html
+
+}
+
+function abrirMesa(mesa){
+
+mesaActual=mesa
+
+const menu={
+petiscos:[
+["Torresmo",3.50],
+["Batata frita com cheddar e bacon",4.90],
+["Batata frita",2.50],
+["Linguiça acebolada com batatas",7.50],
+["Caldo do dia",3.50],
+["Mandioca frita",4.50],
+["Hambúrguer da casa",7.50],
+["Mini salgadinhos (12 unid.)",4.90]
+],
+
+salgados:[
+["Coxinha de carne seca",3.50],
+["Coxinha de frango",3.10],
+["Coxinha de frango com requeijão",3.40],
+["Esfirra de frango",3.40],
+["Esfirra de carne com requeijão",3.40],
+["Empanada argentina",2.70],
+["Empanada venezuelana",2.70],
+["Empada de frango",3.10],
+["Empada de frango, milho e azeitona",3.10],
+["Enroladinho de salsicha",2.50],
+["Joelho (Bauru / italiano)",3.10],
+["Hambúrguer de forno",3.90],
+["Quibe de carne",3.10],
+["Quibe de queijo",3.10]
+],
+
+pasteis:[
+["Pastel de carne",4.10],
+["Pastel de carne e queijo",4.10],
+["Pastel de milho e queijo",3.90],
+["Pastel de frango e queijo",3.90],
+["Pastel de pizza",3.90],
+["Pastel de frango, milho e requeijão",4.10],
+["Pastel de queijo",3.90],
+["Pastel de carne seca e queijo",5.10],
+["Pastel de palmito, queijo e orégãos",4.10],
+["Dobrar recheio",2.00],
+["Ingrediente extra",1.50]
+],
+
+sobremesas:[
+["Açaí pequeno",5.20],
+["Açaí grande",7.20],
+["Bolo de pote",5.20],
+["Brigadeiro",1.00],
+["Paçoca",0.70],
+["Alfajor doce de leite",2.20],
+["Alfajor pistáchio",2.50],
+["Alfajor coco",2.50]
+],
+
+bebidas:[
+["Água sem gás",1.00],
+["Água tônica",1.80],
+["Água das Pedras",1.40],
+["Água Frize",1.40],
+["Refrigerante",1.80],
+["Ice tea",1.80],
+["Compal",1.80],
+["Guaraná Antarctica",1.80],
+["Energético",2.50],
+["Batido de polpa natural",3.90],
+["Suco de polpa natural",3.50],
+["Caldo de cana",4.90]
+],
+
+cervejas:[
+["Fino",1.20],
+["Caneca",2.50],
+["Super Bock",1.50],
+["Super Bock Stout",1.60],
+["Panaché",1.50],
+["Tango",1.30],
+["Marfino",1.90],
+["Heineken",1.20],
+["Desperados",1.90],
+["1906",1.90],
+["Quilmes",2.70],
+["Brahma",2.00],
+["Skol",2.00]
+],
+
+alcool:[
+["Caipirinha de limão",5.00],
+["Caipirinha de morango",6.00],
+["Fernet com cola",4.50],
+["Taça de vinho",1.00],
+["Garrafa de vinho",6.90],
+["Vinho com Fanta",2.50],
+["Somersby",1.90]
+]
+
+}
+
+let html=`<h2>Mesa ${mesa}</h2>`
+
+html+=`<button onclick="verPedido('${mesa}')">Ver pedido</button><br><br>`
+
+html+=`
+<input
+type="text"
+placeholder="Buscar producto..."
+onkeyup="buscarProducto(this.value)"
+style="width:300px;padding:10px;margin-bottom:20px">
+`
+
+for(const categoria in menu){
+
+html+=`<h3>${categoria.toUpperCase()}</h3>`
+
+menu[categoria].forEach(item=>{
+
+html+=`
+<button onclick="seleccionarProducto('${item[0]}',${item[1]})"
+style="width:180px;height:70px">
+${item[0]}<br>€${item[1]}
+</button>
+`
+
+})
+
+}
+
+html+=`<br><br><button onclick="cargarMesas()">⬅ Volver</button>`
+
+document.getElementById("mesas").innerHTML=html
+
+}
+
+function seleccionarProducto(producto,precio){
+
+if(!opcionesProductos[producto]){
+pedir(producto,precio)
+return
+}
+
+let html=`<h2>${producto}</h2>`
+
+opcionesProductos[producto].forEach(op=>{
+
+html+=`
+<button onclick="pedir('${producto} (${op})',${precio})"
+style="width:220px;height:60px">
+${op}
+</button>
+`
+
+})
+
+html+=`<br><br><button onclick="abrirMesa('${mesaActual}')">Volver</button>`
+
+document.getElementById("mesas").innerHTML=html
+
+}
+
+async function pedir(producto,precio){
+
+await db.from("pedidos").insert({
+mesa:mesaActual,
+producto:producto,
+precio:precio,
+cantidad:1,
+estado:"pendiente"
+})
+
+mostrarAviso(producto+" enviado a cozinha")
+
+abrirMesa(mesaActual)
+
+}
+
+function mostrarAviso(texto){
+
+let aviso=document.getElementById("aviso")
+
+aviso.innerText=texto
+aviso.style.display="block"
+
+setTimeout(()=>{
+aviso.style.display="none"
+},1000)
+
+}
+
+function buscarProducto(texto){
+
+texto=texto.toLowerCase()
+
+document.querySelectorAll("#mesas button").forEach(b=>{
+
+if(b.innerText.toLowerCase().includes(texto)){
+b.style.display="inline-block"
+}else{
+b.style.display="none"
+}
+
+})
+
+}
+async function verPedido(mesa){
+
+const { data } = await db
+.from("pedidos")
+.select("*")
+.eq("mesa",mesa)
+
+let html=`<h2>Mesa ${mesa}</h2>`
+
+let total=0
+
+data.forEach(p=>{
+
+let color="black"
+
+if(p.estado=="pendiente") color="orange"
+if(p.estado=="listo") color="green"
+if(p.estado=="cerrado") color="gray"
+
+if(p.estado!="cerrado"){
+total+=p.precio
+}
+
+html+=`
+<div style="border-bottom:1px solid #ccc;padding:10px;color:${color}">
+${p.producto} - €${p.precio}
+
+<button onclick="borrarPedido(${p.id},'${mesa}')" style="margin-left:10px;background:red;color:white">
+❌
+</button>
+
+</div>
+`
+
+})
+
+html+=`<h3>Total: €${total.toFixed(2)}</h3>`
+
+html+=`
+<br>
+<button onclick="abrirMesa('${mesa}')">Agregar más</button>
+<button onclick="cerrarMesa('${mesa}')">Cerrar mesa</button>
+<button onclick="borrarMesa('${mesa}')">Borrar mesa</button>
+<button onclick="cargarMesas()">Volver</button>
+`
+
+document.getElementById("mesas").innerHTML=html
+
+}
+async function borrarPedido(id,mesa){
+
+await db
+.from("pedidos")
+.delete()
+.eq("id",id)
+
+verPedido(mesa)
+
+}
+async function cerrarMesa(mesa){
+
+await db
+.from("pedidos")
+.update({estado:"cerrado"})
+.eq("mesa",mesa)
+.eq("estado","pendiente")
+
+mostrarAviso("Mesa cerrada")
+
+cargarMesas()
+
+}
+async function borrarMesa(mesa){
+
+await db
+.from("pedidos")
+.delete()
+.eq("mesa",mesa)
+
+mostrarAviso("Mesa borrada")
+
+cargarMesas()
+
+}
+cargarMesas()
+
+</script>
+
+</body>
+</html>
