@@ -9,6 +9,55 @@
 body{
 font-family:Arial;
 background:#c69214;
+margin:0;
+padding:20px;
+}
+
+h1{
+text-align:center;
+}
+
+.zona{
+margin-bottom:40px;
+}
+
+.mesas-grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,160px);
+gap:18px;
+}
+
+.mesa-btn{
+width:160px;
+height:120px;
+font-size:28px;
+border-radius:12px;
+border:none;
+cursor:pointer;
+color:white;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+font-weight:bold;
+}
+
+.libre{
+background:#2e7d32;
+}
+
+.pendiente{
+background:#f9a825;
+color:black;
+}
+
+.listo{
+background:#c62828;
+}
+
+.items{
+font-size:16px;
+margin-top:6px;
 }
 
 button{
@@ -20,15 +69,18 @@ font-size:16px;
 cursor:pointer;
 }
 
-#aviso{
+#toast{
 position:fixed;
-top:10px;
-right:10px;
-background:#4CAF50;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+background:#2e7d32;
 color:white;
-padding:10px;
-border-radius:8px;
+padding:14px 22px;
+border-radius:10px;
+font-size:18px;
 display:none;
+z-index:1000;
 }
 
 </style>
@@ -38,12 +90,12 @@ display:none;
 <body>
 
 <div style="text-align:center;margin-bottom:20px">
-<img src="logo.png" style="height:250px">
+<img src="logo.png" style="height:200px">
 </div>
 
 <h1>Mesas</h1>
 
-<div id="aviso"></div>
+<div id="toast"></div>
 <div id="mesas"></div>
 
 <script>
@@ -97,7 +149,20 @@ const opcionesProductos={
 
 }
 
-async function cargarMesas(){
+function mostrarToast(texto){
+
+const toast=document.getElementById("toast")
+
+toast.innerText=texto
+toast.style.display="block"
+
+setTimeout(()=>{
+toast.style.display="none"
+},1500)
+
+}
+
+  async function cargarMesas(){
 
 const { data:mesas } = await db
 .from("mesas")
@@ -114,26 +179,29 @@ const { data:pedidos } = await db
 .select("*")
 .eq("mesa",m.id)
 
-let color="green"
+let estado="libre"
+let cantidad=0
 
 const abiertos = pedidos.filter(p => p.estado !== "cerrado")
 
 if(abiertos.length > 0){
 
+cantidad = abiertos.length
+
 const pendientes = abiertos.filter(p => p.estado === "pendiente")
 
 if(pendientes.length > 0){
-color="yellow"
+estado="pendiente"
 }else{
-color="red"
+estado="listo"
 }
 
 }
 
 const boton=`
-<button onclick="abrirMesa('${m.id}')"
-style="width:100px;height:70px;font-size:22px;background:${color}">
-${m.id}
+<button class="mesa-btn ${estado}" onclick="abrirMesa('${m.id}')">
+<div>${m.id}</div>
+<div class="items">${cantidad} items</div>
 </button>
 `
 
@@ -151,14 +219,26 @@ salon+=boton
 
 let html=`
 
+<div class="zona">
 <h2>BARRA</h2>
+<div class="mesas-grid">
 ${barra}
+</div>
+</div>
 
+<div class="zona">
 <h2>ESPLANADA</h2>
+<div class="mesas-grid">
 ${esplanada}
+</div>
+</div>
 
+<div class="zona">
 <h2>SALÓN</h2>
+<div class="mesas-grid">
 ${salon}
+</div>
+</div>
 
 `
 
@@ -166,11 +246,14 @@ document.getElementById("mesas").innerHTML=html
 
 }
 
+
+
 function abrirMesa(mesa){
 
 mesaActual=mesa
 
 const menu={
+
 petiscos:[
 ["Torresmo",3.50],
 ["Batata frita com cheddar e bacon",4.90],
@@ -302,6 +385,8 @@ document.getElementById("mesas").innerHTML=html
 
 }
 
+
+
 function seleccionarProducto(producto,precio){
 
 if(!opcionesProductos[producto]){
@@ -328,6 +413,8 @@ document.getElementById("mesas").innerHTML=html
 
 }
 
+
+
 async function pedir(producto,precio){
 
 await db.from("pedidos").insert({
@@ -338,24 +425,13 @@ cantidad:1,
 estado:"pendiente"
 })
 
-mostrarAviso(producto+" enviado a cozinha")
+mostrarToast(producto+" enviado a cozinha")
 
 abrirMesa(mesaActual)
 
 }
 
-function mostrarAviso(texto){
 
-let aviso=document.getElementById("aviso")
-
-aviso.innerText=texto
-aviso.style.display="block"
-
-setTimeout(()=>{
-aviso.style.display="none"
-},1000)
-
-}
 
 function buscarProducto(texto){
 
@@ -372,6 +448,9 @@ b.style.display="none"
 })
 
 }
+
+
+
 async function verPedido(mesa){
 
 const { data } = await db
@@ -421,6 +500,9 @@ html+=`
 document.getElementById("mesas").innerHTML=html
 
 }
+
+
+
 async function borrarPedido(id,mesa){
 
 await db
@@ -431,6 +513,9 @@ await db
 verPedido(mesa)
 
 }
+
+
+
 async function cerrarMesa(mesa){
 
 await db
@@ -439,11 +524,14 @@ await db
 .eq("mesa",mesa)
 .eq("estado","pendiente")
 
-mostrarAviso("Mesa cerrada")
+mostrarToast("Mesa cerrada")
 
 cargarMesas()
 
 }
+
+
+
 async function borrarMesa(mesa){
 
 await db
@@ -451,11 +539,14 @@ await db
 .delete()
 .eq("mesa",mesa)
 
-mostrarAviso("Mesa borrada")
+mostrarToast("Mesa borrada")
 
 cargarMesas()
 
 }
+
+
+
 cargarMesas()
 
 </script>
