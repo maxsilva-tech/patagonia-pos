@@ -109,6 +109,7 @@ const db = createClient(supabaseUrl, supabaseKey)
 
 let mesaActual=null
 
+
 const opcionesProductos={
 
 "Mini salgadinhos (12 unid.)":[
@@ -145,9 +146,36 @@ const opcionesProductos={
 
 "Somersby":[
 "maçã","frutos bermelhos"
+],
+
+"Batido de polpa natural":[
+"con azúcar",
+"sin azúcar"
+],
+
+"Suco de polpa natural":[
+"con azúcar",
+"sin azúcar"
 ]
 
 }
+
+
+const saboresPolpa=[
+"abacaxi",
+"goiaba",
+"acerola",
+"maracujá",
+"caju",
+"cajá",
+"cupuaçu",
+"graviola",
+"morango",
+"laranja",
+"coco",
+"açaí"
+]
+
 
 function mostrarToast(texto){
 
@@ -389,6 +417,29 @@ document.getElementById("mesas").innerHTML=html
 
 function seleccionarProducto(producto,precio){
 
+if(producto==="Batido de polpa natural" || producto==="Suco de polpa natural"){
+
+let html=`<h2>${producto}</h2>`
+html+=`<h3>Azúcar</h3>`
+
+opcionesProductos[producto].forEach(op=>{
+
+html+=`
+<button onclick="seleccionarSabor('${producto}','${op}',${precio})"
+style="width:220px;height:60px">
+${op}
+</button>
+`
+
+})
+
+html+=`<br><br><button onclick="abrirMesa('${mesaActual}')">Volver</button>`
+
+document.getElementById("mesas").innerHTML=html
+
+return
+}
+
 if(!opcionesProductos[producto]){
 pedir(producto,precio)
 return
@@ -402,6 +453,30 @@ html+=`
 <button onclick="pedir('${producto} (${op})',${precio})"
 style="width:220px;height:60px">
 ${op}
+</button>
+`
+
+})
+
+html+=`<br><br><button onclick="abrirMesa('${mesaActual}')">Volver</button>`
+
+document.getElementById("mesas").innerHTML=html
+
+}
+
+
+
+function seleccionarSabor(producto,azucar,precio){
+
+let html=`<h2>${producto}</h2>`
+html+=`<h3>Sabor</h3>`
+
+saboresPolpa.forEach(s=>{
+
+html+=`
+<button onclick="pedir('${producto} (${azucar} - ${s})',${precio})"
+style="width:220px;height:60px">
+${s}
 </button>
 `
 
